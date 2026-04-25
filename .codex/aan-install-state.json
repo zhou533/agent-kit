@@ -1,0 +1,125 @@
+{
+  "installed_at": "2026-04-25T02:41:36.465227+00:00",
+  "aan_root": "/Users/cyber/RestoX/AgentKit/all-agents-need",
+  "aan_project_relative_path": "all-agents-need",
+  "selected_modules": [
+    "common",
+    "python",
+    "mcp"
+  ],
+  "skills": [
+    "api-design",
+    "backend-patterns",
+    "coding-standards",
+    "documentation-lookup",
+    "security-review",
+    "tdd-workflow",
+    "verification-loop",
+    "python-patterns",
+    "python-testing",
+    "mcp-server-patterns"
+  ],
+  "agents": [
+    {
+      "id": "architect",
+      "source_file": "architect.md",
+      "name": "architect"
+    },
+    {
+      "id": "code_architect",
+      "source_file": "code-architect.md",
+      "name": "code-architect"
+    },
+    {
+      "id": "planner",
+      "source_file": "planner.md",
+      "name": "planner"
+    },
+    {
+      "id": "code_reviewer",
+      "source_file": "code-reviewer.md",
+      "name": "code-reviewer"
+    },
+    {
+      "id": "code_explorer",
+      "source_file": "code-explorer.md",
+      "name": "code-explorer"
+    },
+    {
+      "id": "code_simplifier",
+      "source_file": "code-simplifier.md",
+      "name": "code-simplifier"
+    },
+    {
+      "id": "refactor_cleaner",
+      "source_file": "refactor-cleaner.md",
+      "name": "refactor-cleaner"
+    },
+    {
+      "id": "build_error_resolver",
+      "source_file": "build-error-resolver.md",
+      "name": "build-error-resolver"
+    },
+    {
+      "id": "performance_optimizer",
+      "source_file": "performance-optimizer.md",
+      "name": "performance-optimizer"
+    },
+    {
+      "id": "security_reviewer",
+      "source_file": "security-reviewer.md",
+      "name": "security-reviewer"
+    },
+    {
+      "id": "silent_failure_hunter",
+      "source_file": "silent-failure-hunter.md",
+      "name": "silent-failure-hunter"
+    },
+    {
+      "id": "type_design_analyzer",
+      "source_file": "type-design-analyzer.md",
+      "name": "type-design-analyzer"
+    },
+    {
+      "id": "pr_test_analyzer",
+      "source_file": "pr-test-analyzer.md",
+      "name": "pr-test-analyzer"
+    },
+    {
+      "id": "tdd_guide",
+      "source_file": "tdd-guide.md",
+      "name": "tdd-guide"
+    },
+    {
+      "id": "doc_updater",
+      "source_file": "doc-updater.md",
+      "name": "doc-updater"
+    },
+    {
+      "id": "docs_lookup",
+      "source_file": "docs-lookup.md",
+      "name": "docs-lookup"
+    },
+    {
+      "id": "python_reviewer",
+      "source_file": "python-reviewer.md",
+      "name": "python-reviewer"
+    },
+    {
+      "id": "pytorch_build_resolver",
+      "source_file": "pytorch-build-resolver.md",
+      "name": "pytorch-build-resolver"
+    }
+  ],
+  "mcp_servers": [
+    {
+      "name": "context7"
+    }
+  ],
+  "ignored_categories": [
+    "commands",
+    "rules",
+    "hooks"
+  ],
+  "boundary_profile": "aan_boundary"
+}

@@ -1,0 +1,92 @@
+profile = "aan_boundary"
+
+# >>> AAN AGENTS MANAGED BLOCK START >>>
+# Managed by all-agents-need/install/codex/install-agents.py
+
+[agents.architect]
+description = "软件架构专家，专注于系统设计、可扩展性和技术决策。在规划新功能、重构大型系统或进行架构决策时，主动使用。"
+config_file = "agents/architect.toml"
+
+[agents.build_error_resolver]
+description = "构建和TypeScript错误解决专家。在构建失败或类型错误发生时主动使用。仅以最小差异修复构建/类型错误，不进行架构编辑。专注于快速使构建通过。"
+config_file = "agents/build_error_resolver.toml"
+
+[agents.code_architect]
+description = "通过分析既有代码库的模式与约定来设计功能架构，然后产出包含具体文件、接口、数据流与构建顺序的实施蓝图。"
+config_file = "agents/code_architect.toml"
+
+[agents.code_explorer]
+description = "深入分析既有代码库的功能，追踪执行路径、绘制架构分层、记录依赖关系，为新开发工作提供情报。"
+config_file = "agents/code_explorer.toml"
+
+[agents.code_reviewer]
+description = "专业代码审查专家。主动审查代码的质量、安全性和可维护性。在编写或修改代码后立即使用。所有代码变更必须使用。"
+config_file = "agents/code_reviewer.toml"
+
+[agents.code_simplifier]
+description = "在保持行为不变的前提下，简化并精修代码，使其更清晰、一致、易维护。除非另有要求，默认聚焦于最近修改过的代码。"
+config_file = "agents/code_simplifier.toml"
+
+[agents.doc_updater]
+description = "文档和代码映射专家。主动用于更新代码映射和文档。运行 /update-codemaps 和 /update-docs，生成 docs/CODEMAPS/*，更新 README 和指南。"
+config_file = "agents/doc_updater.toml"
+
+[agents.docs_lookup]
+description = "当用户询问如何使用库、框架或API，或需要最新的代码示例时，使用Context7 MCP获取当前文档，并返回带有示例的答案。针对文档/API/设置问题调用。"
+config_file = "agents/docs_lookup.toml"
+
+[agents.performance_optimizer]
+description = "性能分析与优化专家。主动用于识别瓶颈、优化慢代码、减小 bundle 体积、改善运行时性能。覆盖 profiling、内存泄漏、渲染优化、算法改进。"
+config_file = "agents/performance_optimizer.toml"
+
+[agents.planner]
+description = "复杂功能和重构的专家规划专家。当用户请求功能实现、架构变更或复杂重构时，请主动使用。计划任务自动激活。"
+config_file = "agents/planner.toml"
+
+[agents.pr_test_analyzer]
+description = "审查 PR 的测试覆盖质量与完整性，重点评估行为覆盖率与真实 bug 预防能力。"
+config_file = "agents/pr_test_analyzer.toml"
+
+[agents.python_reviewer]
+description = "专业的Python代码审查员，专精于PEP 8合规性、Pythonic惯用法、类型提示、安全性和性能。适用于所有Python代码变更。必须用于Python项目。"
+config_file = "agents/python_reviewer.toml"
+
+[agents.pytorch_build_resolver]
+description = "PyTorch运行时、CUDA和训练错误解决专家。修复张量形状不匹配、设备错误、梯度问题、DataLoader问题和混合精度失败，改动最小。在PyTorch训练或推理崩溃时使用。"
+config_file = "agents/pytorch_build_resolver.toml"
+
+[agents.refactor_cleaner]
+description = "死代码清理与整合专家。主动用于移除未使用代码、重复项和重构。运行分析工具（knip、depcheck、ts-prune）识别死代码并安全移除。"
+config_file = "agents/refactor_cleaner.toml"
+
+[agents.security_reviewer]
+description = "安全漏洞检测与修复专家。在编写处理用户输入、身份验证、API端点或敏感数据的代码后主动使用。标记密钥、SSRF、注入、不安全的加密以及OWASP Top 10漏洞。"
+config_file = "agents/security_reviewer.toml"
+
+[agents.silent_failure_hunter]
+description = "审查代码中的静默失败、被吞掉的异常、可疑的 fallback，以及缺失的错误传播。"
+config_file = "agents/silent_failure_hunter.toml"
+
+[agents.tdd_guide]
+description = "测试驱动开发专家，强制执行先写测试的方法论。在编写新功能、修复错误或重构代码时主动使用。确保80%以上的测试覆盖率。"
+config_file = "agents/tdd_guide.toml"
+
+[agents.type_design_analyzer]
+description = "分析类型设计在封装性、不变式表达、实用性与强制执行四个维度上的表现。"
+config_file = "agents/type_design_analyzer.toml"
+# <<< AAN AGENTS MANAGED BLOCK END <<<
+
+# >>> AAN MCP MANAGED BLOCK START >>>
+# Managed by all-agents-need/install/codex/install-mcp-config.py
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+# <<< AAN MCP MANAGED BLOCK END <<<
+
+# >>> AAN BOUNDARY MANAGED BLOCK START >>>
+# Managed by AAN Codex installer
+
+[profiles.aan_boundary.permissions]
+deny_read = ["all-agents-need/**"]
+# <<< AAN BOUNDARY MANAGED BLOCK END <<<
