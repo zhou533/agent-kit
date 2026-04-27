@@ -38,7 +38,9 @@ def build_request(argv: Sequence[str]) -> FetchUserTweetsRequest:
         end_time=args.end_time,
         since_id=args.since_id,
         until_id=args.until_id,
-        exclude=exclude,
+        exclude=exclude or None,
+        include_retweets=args.include_retweets,
+        include_replies=args.include_replies,
         fields_profile=args.fields_profile,
     )
 
@@ -104,6 +106,16 @@ def _build_parser() -> argparse.ArgumentParser:
     tweets.add_argument("--since-id")
     tweets.add_argument("--until-id")
     tweets.add_argument("--exclude", action="append")
+    tweets.add_argument(
+        "--include-retweets",
+        action="store_true",
+        help="Include retweets instead of excluding them by default.",
+    )
+    tweets.add_argument(
+        "--include-replies",
+        action="store_true",
+        help="Include replies instead of excluding them by default.",
+    )
     tweets.add_argument(
         "--fields-profile",
         choices=["minimal", "default", "full"],

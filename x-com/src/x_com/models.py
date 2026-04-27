@@ -118,6 +118,7 @@ MINIMAL_EXPANSIONS = ["author_id", "referenced_tweets.id"]
 
 ALLOWED_EXCLUDE_VALUES = {"retweets", "replies"}
 ALLOWED_FIELD_PROFILES = {"minimal", "default", "full"}
+DEFAULT_EXCLUDE_VALUES = ["retweets", "replies"]
 USER_ID_PATTERN = re.compile(r"^[0-9]{1,19}$")
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{1,15}$")
 
@@ -150,17 +151,24 @@ class FetchUserTweetsRequest:
     end_time: datetime | None = None
     since_id: str | None = None
     until_id: str | None = None
-    exclude: list[Literal["retweets", "replies"]] = field(default_factory=list)
+    exclude: list[Literal["retweets", "replies"]] | None = None
+    include_retweets: bool = False
+    include_replies: bool = False
     include_context: bool = True
     fields_profile: Literal["default", "minimal", "full"] = "default"
 
     def __post_init__(self) -> None:
+        self._raw_exclude = [value for value in self.exclude or [] if value]
         cleaned_usernames = [_clean_username(value) for value in self.usernames]
         self.usernames = [value for value in cleaned_usernames if value]
         self.user_ids = [
             str(value).strip() for value in self.user_ids if str(value).strip()
         ]
-        self.exclude = [value for value in self.exclude if value]
+        self.exclude = _normalize_exclude(
+            self.exclude,
+            include_retweets=self.include_retweets,
+            include_replies=self.include_replies,
+        )
         self.start_time = _as_utc(self.start_time)
         self.end_time = _as_utc(self.end_time)
 
@@ -200,12 +208,20 @@ class FetchUserTweetsRequest:
             errors.append(
                 "exclude contains unsupported values: " + ", ".join(invalid_exclude)
             )
+        raw_exclude = self._raw_exclude_values()
+        if self.include_retweets and "retweets" in raw_exclude:
+            errors.append("include_retweets cannot be combined with exclude=retweets.")
+        if self.include_replies and "replies" in raw_exclude:
+            errors.append("include_replies cannot be combined with exclude=replies.")
         if self.fields_profile not in ALLOWED_FIELD_PROFILES:
             errors.append(
                 "fields_profile must be one of: "
                 + ", ".join(sorted(ALLOWED_FIELD_PROFILES))
             )
         return errors
+
+    def _raw_exclude_values(self) -> list[str]:
+        return getattr(self, "_raw_exclude", [])
 
 
 @dataclass
@@ -279,6 +295,20 @@ def get_field_profile(profile: str) -> FieldProfile:
 
 def _clean_username(value: str) -> str:
     return value.strip().removeprefix("@")
+
+
+def _normalize_exclude(
+    exclude: list[str] | None,
+    *,
+    include_retweets: bool,
+    include_replies: bool,
+) -> list[str]:
+    values = list(DEFAULT_EXCLUDE_VALUES if exclude is None else exclude)
+    if include_retweets:
+        values = [value for value in values if value != "retweets"]
+    if include_replies:
+        values = [value for value in values if value != "replies"]
+    return [value for value in values if value]
 
 
 def _as_utc(value: datetime | None) -> datetime | None:

@@ -50,6 +50,7 @@ def test_service_fetches_latest_posts_by_username_and_slices_to_requested_count(
     assert client.lookup_calls == [["OpenAI"]]
     assert client.tweet_calls[0]["user_id"] == "1"
     assert client.tweet_calls[0]["max_results"] == 5
+    assert client.tweet_calls[0]["exclude"] == ["retweets", "replies"]
     assert len(result.users[0].tweets) == 3
     assert result.users[0].meta["selection_mode"] == "latest"
 

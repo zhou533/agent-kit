@@ -47,6 +47,19 @@ def test_fetch_user_tweets_requests_context_fields() -> None:
     assert "poll.fields" in params
 
 
+def test_fetch_user_tweets_sends_exclude_parameter() -> None:
+    transport = FakeTransport()
+    client = XComClient(bearer_token="secret", transport=transport)
+
+    client.fetch_user_tweets(
+        user_id="1",
+        max_results=10,
+        exclude=["retweets", "replies"],
+    )
+
+    assert transport.calls[0]["params"]["exclude"] == "retweets,replies"
+
+
 def test_fetch_user_tweets_escapes_user_id_path_segment() -> None:
     transport = FakeTransport()
     client = XComClient(bearer_token="secret", transport=transport)

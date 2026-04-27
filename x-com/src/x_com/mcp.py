@@ -29,6 +29,8 @@ def register_tools(
         since_id: str | None = None,
         until_id: str | None = None,
         exclude: list[str] | None = None,
+        include_retweets: bool = False,
+        include_replies: bool = False,
         include_context: bool = True,
         fields_profile: str = "default",
     ) -> dict:
@@ -53,7 +55,9 @@ def register_tools(
             end_time=parsed_end_time,
             since_id=since_id,
             until_id=until_id,
-            exclude=exclude or [],
+            exclude=exclude,
+            include_retweets=include_retweets,
+            include_replies=include_replies,
             include_context=include_context,
             fields_profile=fields_profile,  # type: ignore[arg-type]
         )

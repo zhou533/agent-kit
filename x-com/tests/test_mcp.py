@@ -27,6 +27,7 @@ def test_register_tools_exposes_fetch_user_tweets_tool() -> None:
         def fetch_user_tweets(self, request):
             assert request.usernames == ["OpenAI"]
             assert request.latest_count == 10
+            assert request.exclude == ["retweets", "replies"]
             return FakeResult()
 
     fake_mcp = FakeMcp()
@@ -38,6 +39,28 @@ def test_register_tools_exposes_fetch_user_tweets_tool() -> None:
 
     assert tool["description"]
     assert result["users"][0]["requested_user"]["username"] == "OpenAI"
+
+
+def test_mcp_tool_can_include_retweets_and_replies() -> None:
+    class FakeResult:
+        def to_dict(self):
+            return {"users": [], "errors": []}
+
+    class FakeService:
+        def fetch_user_tweets(self, request):
+            assert request.exclude == []
+            return FakeResult()
+
+    fake_mcp = FakeMcp()
+    register_tools(fake_mcp, service_factory=lambda: FakeService())
+
+    result = fake_mcp.tools["x_com_fetch_user_tweets"]["handler"](
+        usernames=["OpenAI"],
+        include_retweets=True,
+        include_replies=True,
+    )
+
+    assert result == {"users": [], "errors": []}
 
 
 def test_mcp_tool_returns_structured_validation_error_for_invalid_time() -> None:

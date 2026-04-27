@@ -22,7 +22,7 @@ Custom API hosts are rejected by default. For local test doubles only, set
 
 ```bash
 uv run --project x-com x-com tweets --username XDevelopers --latest 10 --json
-uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --exclude retweets --json
+uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --include-replies --json
 uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01T00:00:00Z --json
 ```
 
@@ -32,6 +32,11 @@ Fetch range rules:
 - `--latest N` selects latest-N mode.
 - If neither is provided, the tool defaults to latest 10 posts.
 - If both are provided, time-range mode takes precedence.
+- Retweets and replies are excluded by default to reduce noise and API spend.
+- Use `--include-retweets` or `--include-replies` to include them.
+- Do not combine `--include-retweets` with `--exclude retweets`, or
+  `--include-replies` with `--exclude replies`; those conflicting inputs are
+  rejected.
 
 ## MCP
 
@@ -44,7 +49,7 @@ uv run --project x-com x-com-mcp
 Or run it directly from the GitHub remote:
 
 ```bash
-uv tool run --from "git+https://github.com/zhou533/agent-kit.git#subdirectory=x-com" x-com-mcp
+uvx --refresh --from "git+https://github.com/zhou533/agent-kit.git@main#subdirectory=x-com" x-com-mcp
 ```
 
 Registered tool:
@@ -54,8 +59,12 @@ x_com_fetch_user_tweets
 ```
 
 The MCP tool accepts `usernames`, `user_ids`, `latest_count`, `start_time`,
-`end_time`, `exclude`, and related pagination/context parameters. It returns
-structured JSON containing per-user tweets, includes, metadata, and errors.
+`end_time`, `include_retweets`, `include_replies`, `exclude`, and related
+pagination/context parameters. It returns structured JSON containing per-user
+tweets, includes, metadata, and errors. Retweets and replies are excluded by
+default unless `include_retweets` or `include_replies` is set to `true`.
+Conflicting inputs such as `exclude=["retweets"]` plus `include_retweets=true`
+are rejected.
 
 ### Codex MCP setup
 
@@ -67,12 +76,11 @@ Recommended project-level example:
 
 ```toml
 [mcp_servers.x-com]
-command = "uv"
+command = "uvx"
 args = [
-  "tool",
-  "run",
+  "--refresh",
   "--from",
-  "git+https://github.com/zhou533/agent-kit.git#subdirectory=x-com",
+  "git+https://github.com/zhou533/agent-kit.git@main#subdirectory=x-com",
   "x-com-mcp"
 ]
 env_vars = ["AGENTKIT_X_COM_BEARER_TOKEN"]
@@ -98,7 +106,7 @@ For a stdio server installed from GitHub, run:
 claude mcp add --transport stdio --scope local \
   --env AGENTKIT_X_COM_BEARER_TOKEN="$AGENTKIT_X_COM_BEARER_TOKEN" \
   --env AGENTKIT_X_COM_API_BASE_URL="https://api.x.com" \
-  x-com -- uv tool run --from "git+https://github.com/zhou533/agent-kit.git#subdirectory=x-com" x-com-mcp
+  x-com -- uvx --refresh --from "git+https://github.com/zhou533/agent-kit.git@main#subdirectory=x-com" x-com-mcp
 ```
 
 This avoids local path assumptions. Claude Code may start stdio MCP servers from
@@ -115,12 +123,11 @@ stay local:
   "mcpServers": {
     "x-com": {
       "type": "stdio",
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "tool",
-        "run",
+        "--refresh",
         "--from",
-        "git+https://github.com/zhou533/agent-kit.git#subdirectory=x-com",
+        "git+https://github.com/zhou533/agent-kit.git@main#subdirectory=x-com",
         "x-com-mcp"
       ],
       "env": {

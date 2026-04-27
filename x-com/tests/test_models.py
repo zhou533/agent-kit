@@ -54,6 +54,34 @@ def test_request_rejects_invalid_exclude_value() -> None:
     assert "exclude" in errors[0]
 
 
+def test_request_excludes_retweets_and_replies_by_default() -> None:
+    request = FetchUserTweetsRequest(usernames=["OpenAI"])
+
+    assert request.exclude == ["retweets", "replies"]
+
+
+def test_request_can_include_retweets_or_replies() -> None:
+    request = FetchUserTweetsRequest(
+        usernames=["OpenAI"],
+        include_retweets=True,
+        include_replies=True,
+    )
+
+    assert request.exclude == []
+
+
+def test_request_rejects_conflicting_exclude_and_include() -> None:
+    request = FetchUserTweetsRequest(
+        usernames=["OpenAI"],
+        exclude=["retweets"],
+        include_retweets=True,
+    )
+
+    errors = request.validation_errors()
+
+    assert "include_retweets" in errors[0]
+
+
 def test_request_rejects_invalid_fields_profile() -> None:
     request = FetchUserTweetsRequest(usernames=["OpenAI"], fields_profile="tiny")
 

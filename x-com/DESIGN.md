@@ -13,6 +13,8 @@
 - 支持按 username 或 user id 获取单人或多人推文。
 - 获取范围支持两种模式：指定时间范围，或指定最新 N 条。两者都未指定时默认
   获取最新 10 条；两者同时指定时以时间范围优先。
+- 默认排除 retweets 和 replies，以降低无关内容与 API 消耗；可通过参数显式
+  包含 retweets 或 replies。
 - 返回推文上下文详细字段，包括 `includes` 中的关联用户、媒体、地点、投票和
   被引用推文。
 - 支持 CLI 和 MCP 两种入口。
@@ -120,7 +122,9 @@ class FetchUserTweetsRequest:
     end_time: datetime | None = None
     since_id: str | None = None
     until_id: str | None = None
-    exclude: list[Literal["retweets", "replies"]] = []
+    exclude: list[Literal["retweets", "replies"]] | None = None
+    include_retweets: bool = False
+    include_replies: bool = False
     include_context: bool = True
     fields_profile: Literal["default", "minimal", "full"] = "default"
 
@@ -156,7 +160,7 @@ class FetchUserTweetsResult:
 
 ```bash
 uv run --project x-com x-com tweets --username XDevelopers --latest 50 --json
-uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --exclude retweets --json
+uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --include-replies --json
 uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01T00:00:00Z --json
 ```
 
@@ -172,7 +176,12 @@ uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01
   时间范围获取，即使同时提供 `--latest` 也忽略 `--latest`。
 - `--since-id` / `--until-id`：ID 边界，可与时间模式或 latest 模式组合传给
   X API，但不决定“时间范围 vs 最新 N 条”的主选择模式。
-- `--exclude retweets,replies`：排除转推或回复。
+- 默认排除 `retweets,replies`：减少噪声和 API 消耗。
+- `--include-retweets`：包含转推。
+- `--include-replies`：包含回复。
+- `--exclude retweets,replies`：显式设置排除项；未设置时使用默认排除项。
+- 同一类型不能同时 include 和 exclude，例如 `--include-retweets` 不能和
+  `--exclude retweets` 同时使用。
 - `--fields-profile minimal|default|full`：控制字段集合。
 - `--json`：输出结构化 JSON。
 - `--fail-fast`：遇到单用户失败立即退出。
@@ -200,7 +209,9 @@ x_com_fetch_user_tweets
   "end_time": null,
   "since_id": null,
   "until_id": null,
-  "exclude": ["retweets"],
+  "exclude": null,
+  "include_retweets": false,
+  "include_replies": false,
   "include_context": true,
   "fields_profile": "default"
 }

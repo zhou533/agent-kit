@@ -27,6 +27,26 @@ def test_build_request_parses_latest_mode() -> None:
     assert request.exclude == ["retweets", "replies"]
 
 
+def test_build_request_excludes_retweets_and_replies_by_default() -> None:
+    request = build_request(["tweets", "--username", "OpenAI"])
+
+    assert request.exclude == ["retweets", "replies"]
+
+
+def test_build_request_can_include_retweets_and_replies() -> None:
+    request = build_request(
+        [
+            "tweets",
+            "--username",
+            "OpenAI",
+            "--include-retweets",
+            "--include-replies",
+        ]
+    )
+
+    assert request.exclude == []
+
+
 def test_build_request_parses_time_mode_and_user_id() -> None:
     request = build_request(
         [
