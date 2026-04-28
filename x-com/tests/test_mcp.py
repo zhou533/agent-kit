@@ -41,6 +41,48 @@ def test_register_tools_exposes_fetch_user_tweets_tool() -> None:
     assert result["users"][0]["requested_user"]["username"] == "OpenAI"
 
 
+def test_register_tools_exposes_get_usage_tool() -> None:
+    class FakeResult:
+        def to_dict(self):
+            return {
+                "data": {"project_usage": 25},
+                "summary": {"project_usage": 25},
+                "meta": {"endpoint": "/2/usage/tweets"},
+                "errors": [],
+            }
+
+    class FakeService:
+        def fetch_usage(self, request):
+            assert request.days == 7
+            assert request.usage_fields is None
+            return FakeResult()
+
+    fake_mcp = FakeMcp()
+
+    register_tools(fake_mcp, service_factory=lambda: FakeService())
+
+    tool = fake_mcp.tools["x_com_get_usage"]
+    result = tool["handler"]()
+
+    assert tool["description"]
+    assert result["data"] == {"project_usage": 25}
+
+
+def test_mcp_usage_tool_validates_input_before_loading_configuration() -> None:
+    fake_mcp = FakeMcp()
+
+    register_tools(fake_mcp, service_factory=lambda: object())
+
+    result = fake_mcp.tools["x_com_get_usage"]["handler"](
+        days=91,
+        usage_fields=["project_usage"],
+    )
+
+    assert result["data"] == {}
+    assert result["errors"][0]["type"] == "validation_error"
+    assert "days" in result["errors"][0]["message"]
+
+
 def test_mcp_tool_can_include_retweets_and_replies() -> None:
     class FakeResult:
         def to_dict(self):

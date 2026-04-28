@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from x_com.models import FetchUserTweetsRequest
+from x_com.models import FetchUsageRequest, FetchUserTweetsRequest
 from x_com.service import XComService
 
 
@@ -10,6 +10,7 @@ class FakeClient:
     def __init__(self) -> None:
         self.lookup_calls = []
         self.tweet_calls = []
+        self.usage_calls = []
 
     def lookup_users(self, usernames):
         self.lookup_calls.append(list(usernames))
@@ -34,6 +35,17 @@ class FakeClient:
             ],
             "includes": {"users": [{"id": kwargs["user_id"]}]},
             "meta": {"result_count": 5},
+        }
+
+    def get_usage(self, **kwargs):
+        self.usage_calls.append(kwargs)
+        return {
+            "data": {
+                "project_id": "123",
+                "project_cap": 1000,
+                "project_usage": 125,
+                "cap_reset_day": 1,
+            }
         }
 
 
@@ -122,3 +134,38 @@ def test_service_passes_fields_profile_to_client() -> None:
     )
 
     assert client.tweet_calls[0]["fields_profile"] == "minimal"
+
+
+def test_service_fetches_usage_with_single_client_call_and_summary() -> None:
+    client = FakeClient()
+    service = XComService(client)
+
+    result = service.fetch_usage(
+        FetchUsageRequest(days=30, usage_fields=["project_usage", "project_cap"])
+    )
+
+    assert client.usage_calls == [
+        {"days": 30, "usage_fields": ["project_usage", "project_cap"]}
+    ]
+    assert client.lookup_calls == []
+    assert client.tweet_calls == []
+    assert result.data["project_usage"] == 125
+    assert result.summary["remaining_project_usage"] == 875
+    assert result.summary["project_usage_percent"] == 12.5
+    assert result.meta["endpoint"] == "/2/usage/tweets"
+    assert result.meta["cached"] is False
+
+
+def test_service_usage_summary_handles_missing_fields() -> None:
+    class SparseUsageClient(FakeClient):
+        def get_usage(self, **kwargs):
+            self.usage_calls.append(kwargs)
+            return {"data": {"project_usage": 125}}
+
+    service = XComService(SparseUsageClient())
+
+    result = service.fetch_usage(FetchUsageRequest(include_summary=True))
+
+    assert result.summary["project_usage"] == 125
+    assert "remaining_project_usage" not in result.summary
+    assert "project_usage_percent" not in result.summary

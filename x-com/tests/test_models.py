@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from x_com.models import FetchUserTweetsRequest, get_field_profile, resolve_fetch_window
+from x_com.models import (
+    FetchUsageRequest,
+    FetchUsageResult,
+    FetchUserTweetsRequest,
+    get_field_profile,
+    resolve_fetch_window,
+)
 
 
 def test_fetch_window_defaults_to_latest_10() -> None:
@@ -147,3 +153,45 @@ def test_field_profiles_change_requested_context_fields() -> None:
     assert len(default.tweet_fields) < len(full.tweet_fields)
     assert "context_annotations" in default.tweet_fields
     assert "non_public_metrics" in full.tweet_fields
+
+
+def test_usage_request_defaults_to_7_days() -> None:
+    request = FetchUsageRequest()
+
+    assert request.days == 7
+    assert request.usage_fields is None
+    assert request.validation_errors() == []
+
+
+def test_usage_request_accepts_boundary_days() -> None:
+    assert FetchUsageRequest(days=1).validation_errors() == []
+    assert FetchUsageRequest(days=90).validation_errors() == []
+
+
+def test_usage_request_rejects_days_outside_supported_range() -> None:
+    assert "days" in FetchUsageRequest(days=0).validation_errors()[0]
+    assert "days" in FetchUsageRequest(days=91).validation_errors()[0]
+
+
+def test_usage_request_rejects_unknown_usage_fields() -> None:
+    request = FetchUsageRequest(usage_fields=["project_usage", "unknown"])
+
+    errors = request.validation_errors()
+
+    assert "usage_fields" in errors[0]
+    assert "unknown" in errors[0]
+
+
+def test_usage_result_serializes_stable_shape() -> None:
+    result = FetchUsageResult(
+        data={"project_usage": 12},
+        summary={"remaining_project_usage": 88},
+        meta={"endpoint": "/2/usage/tweets"},
+    )
+
+    assert result.to_dict() == {
+        "data": {"project_usage": 12},
+        "summary": {"remaining_project_usage": 88},
+        "meta": {"endpoint": "/2/usage/tweets"},
+        "errors": [],
+    }

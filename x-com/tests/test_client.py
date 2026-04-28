@@ -60,6 +60,21 @@ def test_fetch_user_tweets_sends_exclude_parameter() -> None:
     assert transport.calls[0]["params"]["exclude"] == "retweets,replies"
 
 
+def test_get_usage_calls_usage_endpoint_with_minimal_parameters() -> None:
+    transport = FakeTransport()
+    client = XComClient(bearer_token="secret", transport=transport)
+
+    client.get_usage(days=30, usage_fields=["project_usage", "project_cap"])
+
+    call = transport.calls[0]
+    assert call["path"] == "/2/usage/tweets"
+    assert call["params"] == {
+        "days": "30",
+        "usage.fields": "project_usage,project_cap",
+    }
+    assert call["headers"]["Authorization"] == "Bearer secret"
+
+
 def test_fetch_user_tweets_escapes_user_id_path_segment() -> None:
     transport = FakeTransport()
     client = XComClient(bearer_token="secret", transport=transport)

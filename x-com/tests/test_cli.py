@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from x_com.cli import build_request, main
+from x_com.cli import build_request, build_usage_request, main
 from x_com.errors import XComApiError
 
 
@@ -84,6 +84,53 @@ def test_main_outputs_json_with_injected_service(capsys) -> None:
 
     assert exit_code == 0
     assert json.loads(capsys.readouterr().out) == {"users": [], "errors": []}
+
+
+def test_build_usage_request_parses_days_and_fields() -> None:
+    request = build_usage_request(
+        [
+            "usage",
+            "--days",
+            "30",
+            "--fields",
+            "project_usage,project_cap",
+            "--json",
+        ]
+    )
+
+    assert request.days == 30
+    assert request.usage_fields == ["project_usage", "project_cap"]
+
+
+def test_main_outputs_usage_json_with_injected_service(capsys) -> None:
+    class FakeResult:
+        def to_dict(self):
+            return {
+                "data": {"project_usage": 10},
+                "summary": {"project_usage": 10},
+                "meta": {"endpoint": "/2/usage/tweets"},
+                "errors": [],
+            }
+
+    class FakeService:
+        def fetch_usage(self, request):
+            assert request.days == 7
+            assert request.usage_fields is None
+            return FakeResult()
+
+    exit_code = main(["usage", "--json"], service_factory=lambda: FakeService())
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out)["data"] == {"project_usage": 10}
+
+
+def test_main_rejects_invalid_usage_days_before_loading_config(capsys) -> None:
+    exit_code = main(["usage", "--days", "91", "--json"], service_factory=lambda: None)
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "days" in captured.err
+    assert captured.out == ""
 
 
 def test_build_request_rejects_invalid_datetime() -> None:
