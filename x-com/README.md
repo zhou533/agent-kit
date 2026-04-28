@@ -24,6 +24,8 @@ Custom API hosts are rejected by default. For local test doubles only, set
 uv run --project x-com x-com tweets --username XDevelopers --latest 10 --json
 uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --include-replies --json
 uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01T00:00:00Z --json
+uv run --project x-com x-com usage --days 7 --json
+uv run --project x-com x-com usage --days 30 --fields project_usage,project_cap,project_id --json
 ```
 
 Fetch range rules:
@@ -37,6 +39,17 @@ Fetch range rules:
 - Do not combine `--include-retweets` with `--exclude retweets`, or
   `--include-replies` with `--exclude replies`; those conflicting inputs are
   rejected.
+
+Usage rules:
+
+- `usage` calls X API `GET /2/usage/tweets` once and does not fetch users or
+  posts.
+- `--days` accepts 1 to 90 and defaults to 7.
+- `--fields` maps to X API `usage.fields`; omit it to use the API default.
+- The response keeps raw `data` and adds a best-effort `summary` with project
+  usage, cap, remaining usage, and usage percent when those fields are present.
+- Usage lookup is explicit and is not run automatically before or after
+  `tweets`, so cost checks do not add hidden API calls.
 
 ## MCP
 
@@ -56,15 +69,20 @@ Registered tool:
 
 ```text
 x_com_fetch_user_tweets
+x_com_get_usage
 ```
 
-The MCP tool accepts `usernames`, `user_ids`, `latest_count`, `start_time`,
+`x_com_fetch_user_tweets` accepts `usernames`, `user_ids`, `latest_count`, `start_time`,
 `end_time`, `include_retweets`, `include_replies`, `exclude`, and related
 pagination/context parameters. It returns structured JSON containing per-user
 tweets, includes, metadata, and errors. Retweets and replies are excluded by
 default unless `include_retweets` or `include_replies` is set to `true`.
 Conflicting inputs such as `exclude=["retweets"]` plus `include_retweets=true`
 are rejected.
+
+`x_com_get_usage` accepts `days`, `usage_fields`, and `include_summary`. It
+returns raw usage `data`, a computed `summary`, `meta`, and `errors`. It is a
+single-request tool intended for explicit budget checks by agents.
 
 ### Codex MCP setup
 

@@ -158,9 +158,7 @@ class FetchUsageRequest:
     def __post_init__(self) -> None:
         if self.usage_fields is not None:
             self.usage_fields = [
-                str(value).strip()
-                for value in self.usage_fields
-                if str(value).strip()
+                str(value).strip() for value in self.usage_fields if str(value).strip()
             ]
 
     def validation_errors(self) -> list[str]:
@@ -170,8 +168,7 @@ class FetchUsageRequest:
         invalid_fields = sorted(set(self.usage_fields or []) - ALLOWED_USAGE_FIELDS)
         if invalid_fields:
             errors.append(
-                "usage_fields contains unsupported values: "
-                + ", ".join(invalid_fields)
+                "usage_fields contains unsupported values: " + ", ".join(invalid_fields)
             )
         return errors
 

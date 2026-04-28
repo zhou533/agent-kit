@@ -15,6 +15,9 @@
   获取最新 10 条；两者同时指定时以时间范围优先。
 - 默认排除 retweets 和 replies，以降低无关内容与 API 消耗；可通过参数显式
   包含 retweets 或 replies。
+- 支持查询 X API Post usage，用于让智能体在需要时显式检查账户/项目访问量。
+- usage 查询必须尽量低访问量：每次最多 1 个 X API 请求，不自动绑定到推文
+  获取流程。
 - 返回推文上下文详细字段，包括 `includes` 中的关联用户、媒体、地点、投票和
   被引用推文。
 - 支持 CLI 和 MCP 两种入口。
@@ -39,6 +42,10 @@
     `since_id`、`until_id`、`exclude`、`tweet.fields`、`expansions`、
     `user.fields`、`media.fields`、`poll.fields`。
   - 适用场景：首期核心能力。
+- `GET /2/usage/tweets`
+  - 用途：获取 X API Post usage。
+  - 关键参数：`days`、`usage.fields`。
+  - 适用场景：显式成本/配额检查。
 - `GET /2/tweets/search/recent`
   - 用途：后续支持搜索式获取，例如 `from:username` 或多条件组合。
   - 关键参数：`query`、`max_results`、`pagination_token`、`tweet.fields`、
@@ -138,6 +145,17 @@ class XComTweetBundle:
 class FetchUserTweetsResult:
     users: list[XComTweetBundle]
     errors: list[XComApiError] = []
+
+class FetchUsageRequest:
+    days: int = 7
+    usage_fields: list[str] | None = None
+    include_summary: bool = True
+
+class FetchUsageResult:
+    data: dict[str, Any]
+    summary: dict[str, Any]
+    meta: dict[str, Any]
+    errors: list[XComApiError] = []
 ```
 
 设计原则：
@@ -153,6 +171,10 @@ class FetchUserTweetsResult:
     `latest_count`。
 - errors 按用户聚合，单个用户失败不应默认导致整个批次失败；CLI 可通过
   `--fail-fast` 改变行为。
+- usage 查询保留 X API 原始 `data`，并以 best-effort 方式生成 `summary`；
+  如果官方响应缺少字段，不因摘要计算失败而丢弃原始数据。
+- usage 不默认本地缓存。当前端点本身为单请求，隐式缓存可能导致成本判断滞后；
+  后续如需要缓存，应通过显式参数加入，并将缓存文件排除出版本控制。
 
 ## CLI 设计
 
@@ -162,6 +184,8 @@ class FetchUserTweetsResult:
 uv run --project x-com x-com tweets --username XDevelopers --latest 50 --json
 uv run --project x-com x-com tweets --usernames XDevelopers,OpenAI --include-replies --json
 uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01T00:00:00Z --json
+uv run --project x-com x-com usage --days 7 --json
+uv run --project x-com x-com usage --days 30 --fields project_usage,project_cap --json
 ```
 
 关键参数：
@@ -186,6 +210,14 @@ uv run --project x-com x-com tweets --user-id 2244994945 --start-time 2026-01-01
 - `--json`：输出结构化 JSON。
 - `--fail-fast`：遇到单用户失败立即退出。
 
+usage 关键参数：
+
+- `--days`：查询最近 N 天 usage，范围 1 到 90，默认 7。
+- `--fields`：逗号分隔的 `usage.fields`，例如
+  `project_usage,project_cap,project_id`。
+- `--no-summary`：只返回 X API 原始 usage 数据，不生成辅助摘要。
+- usage 查询不触发用户解析或推文获取，避免为了成本检查额外增加多个 API 调用。
+
 ## MCP 设计
 
 Python MCP 首选 `mcp.server.fastmcp.FastMCP`。MCP 注册层只定义工具 schema 和调用
@@ -195,6 +227,7 @@ Python MCP 首选 `mcp.server.fastmcp.FastMCP`。MCP 注册层只定义工具 sc
 
 ```text
 x_com_fetch_user_tweets
+x_com_get_usage
 ```
 
 输入：
@@ -253,6 +286,41 @@ MCP 输入归一化规则与 CLI 一致：
 - `x_com_fetch_post`
 - `x_com_fetch_conversation`
 - `x_com_fetch_mentions`
+
+`x_com_get_usage` 输入：
+
+```json
+{
+  "days": 7,
+  "usage_fields": ["project_usage", "project_cap", "project_id"],
+  "include_summary": true
+}
+```
+
+输出：
+
+```json
+{
+  "data": {},
+  "summary": {
+    "project_id": "123",
+    "project_cap": 1000,
+    "project_usage": 125,
+    "remaining_project_usage": 875,
+    "project_usage_percent": 12.5
+  },
+  "meta": {
+    "endpoint": "/2/usage/tweets",
+    "days": 7,
+    "usage_fields": ["project_usage", "project_cap", "project_id"],
+    "cached": false
+  },
+  "errors": []
+}
+```
+
+该 MCP tool 用于 Agent 显式预算检查；不要在每次
+`x_com_fetch_user_tweets` 前后自动调用它。
 
 ## Access Token 与密钥约定
 
