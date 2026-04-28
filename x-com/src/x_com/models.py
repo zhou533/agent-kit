@@ -126,6 +126,14 @@ ALLOWED_USAGE_FIELDS = {
     "project_id",
     "project_usage",
 }
+UsageField = Literal[
+    "cap_reset_day",
+    "daily_client_app_usage",
+    "daily_project_usage",
+    "project_cap",
+    "project_id",
+    "project_usage",
+]
 DEFAULT_EXCLUDE_VALUES = ["retweets", "replies"]
 USER_ID_PATTERN = re.compile(r"^[0-9]{1,19}$")
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{1,15}$")
@@ -152,7 +160,7 @@ class FetchWindow:
 @dataclass
 class FetchUsageRequest:
     days: int = 7
-    usage_fields: list[str] | None = None
+    usage_fields: list[UsageField] | None = None
     include_summary: bool = True
 
     def __post_init__(self) -> None:

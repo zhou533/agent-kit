@@ -100,9 +100,7 @@ def test_mcp_usage_tool_exposes_schema_constraints() -> None:
     assert get_origin(days_annotation) is Annotated
     days_base, *days_metadata = get_args(days_annotation)
     assert days_base is int
-    days_field = next(
-        item for item in days_metadata if isinstance(item, FieldInfo)
-    )
+    days_field = next(item for item in days_metadata if isinstance(item, FieldInfo))
     assert any(getattr(item, "ge", None) == 1 for item in days_field.metadata)
     assert any(getattr(item, "le", None) == 90 for item in days_field.metadata)
 

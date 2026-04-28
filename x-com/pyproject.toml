@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "AgentKit tool for fetching X.com posts through CLI and MCP."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["mcp>=1.0"]
+dependencies = ["mcp>=1.0", "pydantic>=2.0"]
 
 [project.scripts]
 x-com = "x_com.cli:main"

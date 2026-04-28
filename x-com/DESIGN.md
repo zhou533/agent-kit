@@ -301,7 +301,12 @@ MCP 输入归一化规则与 CLI 一致：
 
 ```json
 {
-  "data": {},
+  "data": {
+    "project_id": "123",
+    "project_cap": 1000,
+    "project_usage": 125,
+    "cap_reset_day": 1
+  },
   "summary": {
     "project_id": "123",
     "project_cap": 1000,

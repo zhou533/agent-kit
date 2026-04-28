@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
+from typing import Annotated
+
+from pydantic import Field
 
 from .client import XComClient
 from .config import load_config
 from .errors import ConfigError, XComApiError
-from .models import FetchUsageRequest, FetchUserTweetsRequest
+from .models import FetchUsageRequest, FetchUserTweetsRequest, UsageField
 from .service import XComService
 
 
@@ -79,8 +82,8 @@ def register_tools(
         description="Fetch X API post usage for the configured project/account.",
     )
     def get_usage(
-        days: int = 7,
-        usage_fields: list[str] | None = None,
+        days: Annotated[int, Field(ge=1, le=90)] = 7,
+        usage_fields: list[UsageField] | None = None,
         include_summary: bool = True,
     ) -> dict:
         request = FetchUsageRequest(
