@@ -6,6 +6,8 @@ from typing import Any
 
 from .errors import XComApiError
 from .models import (
+    FetchUsageRequest,
+    FetchUsageResult,
     FetchUserTweetsRequest,
     FetchUserTweetsResult,
     XComTweetBundle,
@@ -19,6 +21,31 @@ X_API_MAX_PAGE_SIZE = 100
 class XComService:
     def __init__(self, client) -> None:
         self.client = client
+
+    def fetch_usage(self, request: FetchUsageRequest) -> FetchUsageResult:
+        errors = request.validation_errors()
+        if errors:
+            raise ValueError("; ".join(errors))
+
+        payload = self.client.get_usage(
+            days=request.days,
+            usage_fields=request.usage_fields,
+        )
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+        result_errors = [
+            error for error in payload.get("errors") or [] if isinstance(error, dict)
+        ]
+        return FetchUsageResult(
+            data=data,
+            summary=_build_usage_summary(data) if request.include_summary else {},
+            meta={
+                "endpoint": "/2/usage/tweets",
+                "days": request.days,
+                "usage_fields": request.usage_fields,
+                "cached": False,
+            },
+            errors=result_errors,
+        )
 
     def fetch_user_tweets(
         self,
@@ -140,3 +167,33 @@ def _merge_includes(
         else:
             merged[key] = value
     return merged
+
+
+def _build_usage_summary(data: dict[str, Any]) -> dict[str, Any]:
+    summary = {}
+    for key in ("project_id", "project_cap", "project_usage", "cap_reset_day"):
+        if key in data:
+            summary[key] = data[key]
+
+    project_cap = _as_number(data.get("project_cap"))
+    project_usage = _as_number(data.get("project_usage"))
+    if project_cap is None or project_usage is None:
+        return summary
+    remaining = max(project_cap - project_usage, 0)
+    summary["remaining_project_usage"] = int(remaining)
+    if project_cap > 0:
+        summary["project_usage_percent"] = round(project_usage / project_cap * 100, 4)
+    return summary
+
+
+def _as_number(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None

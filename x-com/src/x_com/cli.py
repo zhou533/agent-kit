@@ -11,7 +11,7 @@ from datetime import datetime
 from .client import XComClient
 from .config import load_config
 from .errors import ConfigError, XComApiError
-from .models import FetchUserTweetsRequest
+from .models import FetchUsageRequest, FetchUserTweetsRequest
 from .service import XComService
 
 
@@ -45,6 +45,23 @@ def build_request(argv: Sequence[str]) -> FetchUserTweetsRequest:
     )
 
 
+def build_usage_request(argv: Sequence[str]) -> FetchUsageRequest:
+    parser = _build_parser()
+    args = parser.parse_args(list(argv))
+    if args.command != "usage":
+        parser.error("Only the 'usage' command is supported.")
+
+    usage_fields: list[str] = []
+    for value in args.fields or []:
+        usage_fields.extend(_split_csv(value))
+
+    return FetchUsageRequest(
+        days=args.days,
+        usage_fields=usage_fields or None,
+        include_summary=not args.no_summary,
+    )
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -53,7 +70,10 @@ def main(
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = _build_parser()
     args = parser.parse_args(argv)
-    request = build_request(argv)
+    if args.command == "usage":
+        request = build_usage_request(argv)
+    else:
+        request = build_request(argv)
     errors = request.validation_errors()
     if errors:
         for error in errors:
@@ -64,7 +84,10 @@ def main(
         service = (
             service_factory() if service_factory else _default_service(args.env_file)
         )
-        result = service.fetch_user_tweets(request, fail_fast=args.fail_fast)
+        if args.command == "usage":
+            result = service.fetch_usage(request)
+        else:
+            result = service.fetch_user_tweets(request, fail_fast=args.fail_fast)
     except (ConfigError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 2
@@ -123,6 +146,24 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     tweets.add_argument("--json", action="store_true")
     tweets.add_argument("--fail-fast", action="store_true")
+    usage = subparsers.add_parser("usage", help="Fetch X API post usage.")
+    usage.add_argument(
+        "--days",
+        type=int,
+        default=7,
+        help="Number of days to include, from 1 to 90.",
+    )
+    usage.add_argument(
+        "--fields",
+        action="append",
+        help="Comma-separated usage.fields values to request.",
+    )
+    usage.add_argument(
+        "--no-summary",
+        action="store_true",
+        help="Return raw usage data without a computed summary.",
+    )
+    usage.add_argument("--json", action="store_true")
     return parser
 
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from .client import XComClient
 from .config import load_config
 from .errors import ConfigError, XComApiError
-from .models import FetchUserTweetsRequest
+from .models import FetchUsageRequest, FetchUserTweetsRequest
 from .service import XComService
 
 
@@ -74,6 +74,33 @@ def register_tools(
         except XComApiError as error:
             return _error_result("x_api_error", str(error), error.to_dict())
 
+    @mcp.tool(
+        name="x_com_get_usage",
+        description="Fetch X API post usage for the configured project/account.",
+    )
+    def get_usage(
+        days: int = 7,
+        usage_fields: list[str] | None = None,
+        include_summary: bool = True,
+    ) -> dict:
+        request = FetchUsageRequest(
+            days=days,
+            usage_fields=usage_fields,
+            include_summary=include_summary,
+        )
+        errors = request.validation_errors()
+        if errors:
+            return _usage_error_result("validation_error", "; ".join(errors))
+        try:
+            service = service_factory() if service_factory else _default_service()
+            return service.fetch_usage(request).to_dict()
+        except ValueError as error:
+            return _usage_error_result("validation_error", str(error))
+        except ConfigError as error:
+            return _usage_error_result("configuration_error", str(error))
+        except XComApiError as error:
+            return _usage_error_result("x_api_error", str(error), error.to_dict())
+
 
 def create_mcp_server():
     from mcp.server.fastmcp import FastMCP
@@ -112,6 +139,15 @@ def _error_result(error_type: str, message: str, payload: dict | None = None) ->
     if payload:
         error["payload"] = payload
     return {"users": [], "errors": [error]}
+
+
+def _usage_error_result(
+    error_type: str, message: str, payload: dict | None = None
+) -> dict:
+    error = {"type": error_type, "message": message}
+    if payload:
+        error["payload"] = payload
+    return {"data": {}, "summary": {}, "meta": {}, "errors": [error]}
 
 
 if __name__ == "__main__":

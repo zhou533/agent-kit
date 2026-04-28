@@ -85,6 +85,17 @@ class XComClient:
             },
         )
 
+    def get_usage(
+        self,
+        *,
+        days: int = 7,
+        usage_fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        params = {"days": str(days)}
+        if usage_fields:
+            params["usage.fields"] = ",".join(usage_fields)
+        return self._get("/2/usage/tweets", params)
+
     def fetch_user_tweets(
         self,
         *,

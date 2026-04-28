@@ -118,6 +118,14 @@ MINIMAL_EXPANSIONS = ["author_id", "referenced_tweets.id"]
 
 ALLOWED_EXCLUDE_VALUES = {"retweets", "replies"}
 ALLOWED_FIELD_PROFILES = {"minimal", "default", "full"}
+ALLOWED_USAGE_FIELDS = {
+    "cap_reset_day",
+    "daily_client_app_usage",
+    "daily_project_usage",
+    "project_cap",
+    "project_id",
+    "project_usage",
+}
 DEFAULT_EXCLUDE_VALUES = ["retweets", "replies"]
 USER_ID_PATTERN = re.compile(r"^[0-9]{1,19}$")
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{1,15}$")
@@ -139,6 +147,33 @@ class FetchWindow:
     latest_count: int | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
+
+
+@dataclass
+class FetchUsageRequest:
+    days: int = 7
+    usage_fields: list[str] | None = None
+    include_summary: bool = True
+
+    def __post_init__(self) -> None:
+        if self.usage_fields is not None:
+            self.usage_fields = [
+                str(value).strip()
+                for value in self.usage_fields
+                if str(value).strip()
+            ]
+
+    def validation_errors(self) -> list[str]:
+        errors: list[str] = []
+        if self.days < 1 or self.days > 90:
+            errors.append("days must be between 1 and 90.")
+        invalid_fields = sorted(set(self.usage_fields or []) - ALLOWED_USAGE_FIELDS)
+        if invalid_fields:
+            errors.append(
+                "usage_fields contains unsupported values: "
+                + ", ".join(invalid_fields)
+            )
+        return errors
 
 
 @dataclass
@@ -250,6 +285,22 @@ class FetchUserTweetsResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "users": [bundle.to_dict() for bundle in self.users],
+            "errors": self.errors,
+        }
+
+
+@dataclass
+class FetchUsageResult:
+    data: dict[str, Any] = field(default_factory=dict)
+    summary: dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
+    errors: list[dict[str, Any]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "data": self.data,
+            "summary": self.summary,
+            "meta": self.meta,
             "errors": self.errors,
         }
 
