@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Annotated, Literal, get_args, get_origin, get_type_hints
+
+from pydantic.fields import FieldInfo
+
 from x_com.mcp import register_tools
 
 
@@ -83,6 +88,42 @@ def test_mcp_usage_tool_validates_input_before_loading_configuration() -> None:
     assert "days" in result["errors"][0]["message"]
 
 
+def test_mcp_usage_tool_exposes_schema_constraints() -> None:
+    fake_mcp = FakeMcp()
+
+    register_tools(fake_mcp, service_factory=lambda: object())
+
+    handler = fake_mcp.tools["x_com_get_usage"]["handler"]
+    hints = get_type_hints(handler, include_extras=True)
+
+    days_annotation = hints["days"]
+    assert get_origin(days_annotation) is Annotated
+    days_base, *days_metadata = get_args(days_annotation)
+    assert days_base is int
+    days_field = next(
+        item for item in days_metadata if isinstance(item, FieldInfo)
+    )
+    assert any(getattr(item, "ge", None) == 1 for item in days_field.metadata)
+    assert any(getattr(item, "le", None) == 90 for item in days_field.metadata)
+
+    usage_field_literal = _find_literal_annotation(hints["usage_fields"])
+    assert usage_field_literal is not None
+    assert set(get_args(usage_field_literal)) == {
+        "cap_reset_day",
+        "daily_client_app_usage",
+        "daily_project_usage",
+        "project_cap",
+        "project_id",
+        "project_usage",
+    }
+
+
+def test_design_usage_output_example_preserves_raw_data() -> None:
+    design = Path("DESIGN.md").read_text(encoding="utf-8")
+
+    assert '"data": {\n    "project_id": "123",' in design
+
+
 def test_mcp_tool_can_include_retweets_and_replies() -> None:
     class FakeResult:
         def to_dict(self):
@@ -103,6 +144,16 @@ def test_mcp_tool_can_include_retweets_and_replies() -> None:
     )
 
     assert result == {"users": [], "errors": []}
+
+
+def _find_literal_annotation(annotation):
+    if get_origin(annotation) is Literal:
+        return annotation
+    for arg in get_args(annotation):
+        found = _find_literal_annotation(arg)
+        if found is not None:
+            return found
+    return None
 
 
 def test_mcp_tool_returns_structured_validation_error_for_invalid_time() -> None:
